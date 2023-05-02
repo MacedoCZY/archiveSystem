@@ -1,0 +1,108 @@
+    1024      BG0         BG1    BG2
+|-----------|-----|-----|-----|-----|
+|Boot sector| BG0 | ... | ... | BGN |
+|-----------|-----|-----|-----|-----|
+            /     \      /...\ /...\
+         /            \
+      /                   \  
+   /       0x51 0x52 0x53     \
+|----|----|----|----|----|------|
+| SB | GD | DB | IB | IT | DATA |
+|----|----|----|----|----|------|
+  1    N    1    1    M     X   ^
+                      ^         | > 8193
+                    1|..|
+                    1|..|
+                    1|..|
+                 1762|..|
+
+SB 
+O Superblock está sempre localizado no byte 1024 desde o início do volume e tem exatamente 1024 bytes de comprimento. Por exemplo, se o
+disco usar setores de 512 bytes, o Superbloco começará no LBA 2 e ocupará todos os setores 2 e 3.
+
+total_inodes: 0 a 3  00|00 13|98 = 5016 
+total_blocks: 4 a 7  00|00 4E|20 = 20000
+block number SB: ???? = 1
+block size: 24 a 27 pego o valor e desloco << 1024 vejo o conteudo = 0 logo é 1024 0x400
+num blocks per group: 32 a 35  00|00 20|00 = 8192
+num inodes per group: 40 a 43  00|00 06|88 = 1672
+
+GD
+A tabela está localizada no bloco imediatamente após o Superblock. Portanto, se o tamanho do bloco (determinado a partir de um campo no
+superbloco) for 1024 bytes por bloco, a Tabela Descritora do Grupo de Blocos começará no bloco 2. Para qualquer outro tamanho de bloco, ela
+começará no bloco 1. Lembre-se de que os blocos são numerados começando em 0, e que os números dos blocos geralmente não
+correspondem aos endereços dos blocos físicos.
+
+block addres block bitmap: 0 a 4  0x51 = 81
+block addres inode bitmap: 14 a 15  0x52 = 82
+block addres inode table: 8 a 11  0x53 = 83
+
+Root dir (Inode 2) 
+Inode table x block size = 83x1024 = 84992 ou 0x53 x 0x400 = 0x14c00 < Inicio do inode
+Tamanho de um Inode = 128  (OBS: em relação a FAT16 que usava 32 bytes de deslocamento para se mvoer, agora usamos 128 bytes em EXT)
+Pointer D.B.0 = 40 a 43   00|00 01|24 
+Pointer D.B.1 = 44 a 47   00|00 00|00 --> quando é 0 ela não ocupa aquele bloco, logo está apenas na quantidade de blocos anteriores
+
+Pointer D.B.* x Block size = Init dos dados --> 00|00 01|24 x 04|00 = 0x49000
+
+Inode: 0 a 3   00|00 00|02
+Total size: 4 a 5  00|0C
+N.L.: 6 a 6  1
+Type: 7 a 7  02 (Diretorio)
+Name: 8 a N.L.  2E = .
+
+Inode: 00|00 00|02
+Total size: 00|0C
+N.L.: 02
+Type: 02 (dir)
+Name: 2E|2E = ..
+
+Inode: 00|00 00|0B
+Total size: 00|14
+N.L.: 0A
+Type: 02 (dir)
+Name: lost+found
+
+Inode: 00|00 06|89
+Total size: 00|0C
+N.L.: 03
+Type: 02 (dir)
+Name: sub
+
+Inode: 00|00 00|0C
+Total size: 04|4F
+N.L.: 09
+Type: 01 (arquivo)
+Name: teste.txt
+
+Inode: 00|00 06|BB
+Total size: 00|0C
+N.L.: 04
+Type: 02 (dir)
+Name: sub1
+
+Inode: 00|00 00|0D
+Total size: 03|AB
+N.L.: 10
+Name: teste2.txt
+
+Para ir na 12 entrada do Inode mutiplica 11[0 a 11 = 12] * 0x80 * Total size = 0x580 deslocando + a paritr do inicio da Inode table
+
+pego o deslocamento 40 aparitr do +0x580 e mutiplico pelo block size para chegar no 0x80400
+
+para encontrara o -SUB 
+temos o Inode = 00|00 06|89 (1673)
+BG1
+1(root)+BG0+SUB-Inode => 1+8191 = 8192 + 83 --> hexa --> 2000+53 = 2053 x 400 = 0x814C00
+
+Inode/Inode per group = 1 <-- qual BG está
+Inode % inode per group = 1673%1672 = 1  <-- onde esta o inode do conteudo
+
+lembrar que os inodes inciam a contar por 1 e não por 0
+
+00|00 21|24 x 0x400 = 0x849000 conteudo de sub
+
+
+
+
+

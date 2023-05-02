@@ -1,0 +1,36 @@
+a)Qual o tamanho de uma partição formatada em EXT2 ?
+
+
+b)Qual a utilidade do superblock ?
+1 bloko
+A primeira etapa na implementação de um driver Ext2 é localizar, extrair e
+analisar o superbloco. O Superblock contém todas as informações
+sobre o layout do sistema de arquivos e possivelmente contém outras
+informações importantes, como quais recursos opcionais foram usados para
+criar o sistema de arquivos. 
+Depois de terminar com o Superblock, o próximo passo é olhar para a Tabela 
+Descritora do Grupo de Blocos
+
+c)Qual a utilidade do grap descripter ?
+Onde essta data bitmap, onde esta o inodes bitmap, ele ajuda na criação
+de novos diretorios
+
+d)Qual a utilidade da data bitmap ?
+1 bloko
+mapa de bits para saber qual blokos estão livres e quais estão ocupados
+
+e)Qual a utilidade do inodes bitmap ?
+serve para saber na inode table quais estão ocupados e quais estã livres
+começa por 1 e não por 0 a tabela de inodes
+no inodes bitmap se tiver 1 esta ocupado se estiver 0 esta livre
+
+f)O que é um inodes ?
+Um inode é uma estrutura no disco que representa um arquivo, diretório, 
+link simbólico, etc. Os inodes não contêm os dados do arquivo / diretório /
+etc. que eles representam. Em vez disso, eles se vinculam aos blocos que 
+realmente contêm os dados.
+Isso permite que os próprios inodes tenham um tamanho bem definido, o 
+que permite que sejam colocados em arrays facilmente indexáveis. Cada grupo
+de blocos tem uma matriz de inodes pelos quais é responsável e,
+inversamente, cada inode dentro de um sistema de arquivos pertence a uma 
+dessas tabelas (e a um desses grupos de blocos).
