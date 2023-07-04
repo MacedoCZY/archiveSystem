@@ -9,42 +9,45 @@ package archivesystem;
  * @author macedo
  */
 public class bootRecord {
-    public short[] sectorSize = new short[2];
-    public byte sectorReserv;
+    public short sectorSize;
+    public short sectorReserv;
     public byte numFAT;
-    public byte entriesRootDir;
-    public int[] totalSectors = new int[4];
-    public byte[] ocpSectors = new byte[2];
+    public short entriesRootDir;
+    public int totalSectors;
+    public short ocpSectors;
 
-    public short[] getSectorSize() {
-        this.sectorSize[0] = 0;
-        this.sectorSize[1] = 8;
+    public short getSectorSize() {
+        this.sectorSize = 2048;
         
         return sectorSize;
     }
 
     public short getSectorReserv() {
-        return 1;
+        this.sectorReserv = 1;
+        
+        return sectorReserv;
     }
 
-    public short getNumFAT() {
+    public byte getNumFAT() {
         return 1;
     }
 
     public short getEntriesRootDir() {
-        return 4;
+        this.entriesRootDir = 64;
+        
+        return entriesRootDir;
     }
 
-    public int[] getTotalSectors() {
-        this.totalSectors[0] = 40;
-        this.totalSectors[1] = 00;
-        this.totalSectors[2] = 01;
+    public int getTotalSectors() {
+        this.totalSectors = 65600;
         
         return totalSectors;
     }
 
     public short getOcpSectors() {
-        return 66;
+        this.ocpSectors = 66;
+        
+        return ocpSectors;
     }
     
     
