@@ -33,68 +33,36 @@ public class ArchiveSystem {
     
     public static void formatDisc(RandomAccessFile acsFile) throws IOException{
         bootRecord record = new bootRecord();
-        ByteBuffer bootRecordBuffer = ByteBuffer.allocate(SECTOR_SIZE);
+        
+        ByteBuffer bootRecordBuffer = ByteBuffer.allocate(record.getSectorSize());
         
         bootRecordBuffer.order(ByteOrder.LITTLE_ENDIAN);
         
+        //formatando boot record
         bootRecordBuffer.putShort(record.getSectorSize());
-        bootRecordBuffer.putShort(record.getSectorReserv());
+        bootRecordBuffer.putShort(record.getReservSector());
         bootRecordBuffer.put(record.getNumFAT());
         bootRecordBuffer.putShort(record.getEntriesRootDir());
         bootRecordBuffer.putInt(record.getTotalSectors());
-        bootRecordBuffer.putShort(record.getOcpSectors());
-      
+        bootRecordBuffer.putShort(record.getSectorPerFat());
+        
+        //zerando bytes restantes do setor utilizado pelo boot record
+        int remainingBytes = record.getSectorSize() - bootRecordBuffer.position();
+        byte[] zeros = new byte[remainingBytes];
+        bootRecordBuffer.put(zeros);
+        
         acsFile.seek(0);
         
         acsFile.write(bootRecordBuffer.array());
+
+        ByteBuffer fatBuffer = ByteBuffer.allocate(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize());
+        byte[] fatData = new byte[record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize()];
+        fatBuffer.put(fatData);
         
+        acsFile.seek(record.getSectorSize());
         
-        //instanciar a classe boot record
-        /*bootRecord btRec = new bootRecord();
-        
-        // define o pontiero para o inicio do arquivo
-        acsFile.seek(0);
-        
-        acsFile.write(btRec.getSectorSize()[0]);
-        
-        acsFile.write(btRec.getSectorSize()[1]);
-        
-        acsFile.seek(2);
-        
-        acsFile.write(btRec.getSectorReserv()[0]);
-        
-        acsFile.write(btRec.getSectorReserv()[1]);
-        
-        acsFile.seek(4);
-        
-        acsFile.writeByte(btRec.getNumFAT());
-        
-        acsFile.seek(5);
-        
-        acsFile.write(btRec.getEntriesRootDir()[0]);
-        
-        acsFile.write(btRec.getEntriesRootDir()[1]);
-        
-        acsFile.seek(7);
-        
-        acsFile.write(btRec.getTotalSectors()[0]);
-        
-        acsFile.write(btRec.getTotalSectors()[1]);
-        
-        acsFile.write(btRec.getTotalSectors()[2]);
-        
-        acsFile.write(btRec.getTotalSectors()[3]);
-        
-        acsFile.seek(11);
-        
-        acsFile.write(btRec.getOcpSectors()[0]);
-        
-        acsFile.write(btRec.getOcpSectors()[1]);
-        
-        acsFile.seek(2048);
-        
-        acsFile.write();
-        */
+        acsFile.write(fatBuffer.array());
+
         acsFile.close();
     
     }

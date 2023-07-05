@@ -10,11 +10,11 @@ package archivesystem;
  */
 public class bootRecord {
     public short sectorSize;
-    public short sectorReserv;
+    public short reservSector;
     public byte numFAT;
     public short entriesRootDir;
     public int totalSectors;
-    public short ocpSectors;
+    public short sectorPerFat;
 
     public short getSectorSize() {
         this.sectorSize = 2048;
@@ -22,10 +22,10 @@ public class bootRecord {
         return sectorSize;
     }
 
-    public short getSectorReserv() {
-        this.sectorReserv = 1;
+    public short getReservSector() {
+        this.reservSector = 1;
         
-        return sectorReserv;
+        return reservSector;
     }
 
     public byte getNumFAT() {
@@ -33,7 +33,7 @@ public class bootRecord {
     }
 
     public short getEntriesRootDir() {
-        this.entriesRootDir = 64;
+        this.entriesRootDir = 32;
         
         return entriesRootDir;
     }
@@ -44,10 +44,10 @@ public class bootRecord {
         return totalSectors;
     }
 
-    public short getOcpSectors() {
-        this.ocpSectors = 66;
+    public short getSectorPerFat() {
+        this.sectorPerFat = 64;
         
-        return ocpSectors;
+        return sectorPerFat;
     }
     
     
