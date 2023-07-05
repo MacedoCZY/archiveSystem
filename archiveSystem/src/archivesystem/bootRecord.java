@@ -15,6 +15,13 @@ public class bootRecord {
     public short entriesRootDir;
     public int totalSectors;
     public short sectorPerFat;
+    public int quantSectorData;
+
+    public int getQuantSectorData() {
+        this.quantSectorData = 65534;
+        
+        return quantSectorData;
+    }
 
     public short getSectorSize() {
         this.sectorSize = 2048;
