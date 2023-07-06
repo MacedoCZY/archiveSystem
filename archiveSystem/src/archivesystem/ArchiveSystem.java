@@ -144,7 +144,15 @@ public class ArchiveSystem {
                 if(setorClean){
                     //System.out.println("entro no setor clean");
                     firstSector = localSet;
-                    
+                    System.out.println("fr = "+firstSector);
+                    short convert = firstSector;
+                    convert >>= 8;
+                    byte conv2 = (byte) firstSector;
+                    firstSector = 0;
+                    firstSector = conv2;
+                    firstSector <<= 8;
+                    firstSector |= convert;
+                    System.out.println("fr = "+firstSector);
                     if(quantSectPerFile == 1){
                         acsFile.writeShort(0xFEFF);
                         break;
@@ -215,71 +223,80 @@ public class ArchiveSystem {
             
             if("rootdir".equals(whereCopy)){
                 acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize());
-                if(acsFile.readByte() == 0xE5 || acsFile.readByte() == 0x00){
-                    acsFile.seek(acsFile.getFilePointer()-1);
-                    if(!archCopy.contains(".")){
-                        acsFile.writeUTF(archCopy);
-                        acsFile.seek(acsFile.getFilePointer()+(21-archCopy.length()));
-                        
-                        acsFile.seek(acsFile.getFilePointer()+4);
-                        Path test = Paths.get(archCopy);
-                        if(Files.isDirectory(test)){
-                            acsFile.writeByte(10);
-                        }else{
-                            acsFile.writeByte(20);
+                System.out.println("pos ::"+(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize()));
+                while(true){
+                    if(acsFile.readByte() == 0x00){
+                        System.out.println(" entero");
+                        acsFile.seek(acsFile.getFilePointer()-1);
+                        if(!archCopy.contains(".")){
+                            acsFile.writeChars(archCopy);
+                            acsFile.seek(acsFile.getFilePointer()+(21-archCopy.length()));
+
+                            acsFile.seek(acsFile.getFilePointer()+4);
+                            Path test = Paths.get(archCopy);
+                            if(Files.isDirectory(test)){
+                                acsFile.writeByte(10);
+                            }else{
+                                acsFile.writeByte(20);
+                            }
+
+                            acsFile.writeShort(firstSector);
+
+                            acsFile.writeInt((int) copyFile.length());
+
+                        }else if(archCopy.contains(".")){       
+                            char[] charName = archCopy.toCharArray();
+                            boolean ps = false;
+                            byte tamN = 0;
+                            byte tamE = 0;
+                            for(int i = 0, j = 0; i < charName.length; i++){
+                                if(ps){
+                                    tamE++;
+                                }else if(!ps && charName[i] != '.'){
+                                    tamN++;
+                                }
+
+                                if(charName[i] == '.'){
+                                    ps = true;
+                                }
+                            }
+
+                            char[] auxName = new char[tamN];
+                            char[] auxExt = new char[tamE];
+
+                            ps = false;
+                            for(int i = 0, j = 0; i < charName.length; i++){
+                                if(ps){
+                                    auxExt[j] = charName[i];
+                                    j++;
+                                }else if(!ps && charName[i] != '.'){
+                                    auxName[i] = charName[i];
+                                }
+
+                                if(charName[i] == '.'){
+                                    ps = true;
+                                }
+                            }
+                            String wrtName = new String(auxName);
+                            System.out.println(wrtName);
+                            String wrtExt = new String(auxExt);
+                            System.out.println(wrtExt);
+                            acsFile.writeBytes(wrtName);
+                            acsFile.seek(acsFile.getFilePointer()+(21-auxName.length));
+
+                            acsFile.writeBytes(wrtExt);
+
+                            acsFile.seek(acsFile.getFilePointer()+(4-auxExt.length));
+
+                            acsFile.writeByte(0x20);
+
+                            acsFile.writeShort(firstSector);
+
+                            acsFile.writeInt((int) copyFile.length());
                         }
-                            
-                        acsFile.writeShort(firstSector);
-                        
-                        acsFile.writeInt((int) copyFile.length());
-                        
-                    }else if(archCopy.contains(".")){       
-                        char[] charName = archCopy.toCharArray();
-                        boolean ps = false;
-                        byte tamN = 0;
-                        byte tamE = 0;
-                        for(int i = 0, j = 0; i < charName.length; i++){
-                            if(ps){
-                                tamE++;
-                            }else if(!ps && charName[i] != '.'){
-                                tamN++;
-                            }
-   
-                            if(charName[i] == '.'){
-                                ps = true;
-                            }
-                        }
-                        
-                        char[] auxName = new char[tamN];
-                        char[] auxExt = new char[tamE];
-                        
-                        ps = false;
-                        for(int i = 0, j = 0; i < charName.length; i++){
-                            if(ps){
-                                auxExt[j] = charName[i];
-                                j++;
-                            }else if(!ps && charName[i] != '.'){
-                                auxName[i] = charName[i];
-                            }
-   
-                            if(charName[i] == '.'){
-                                ps = true;
-                            }
-                        }
-                        String wrtName = auxName.toString();
-                        String wrtExt = auxExt.toString();
-                        
-                        acsFile.seek(acsFile.getFilePointer()+(21-auxName.length));
-                        
-                        acsFile.writeUTF(wrtExt);
-                        
-                        acsFile.seek(acsFile.getFilePointer()+(4-auxExt.length));
-                        
-                        acsFile.writeByte(0x20);
-                        
-                        acsFile.writeShort(firstSector);
-                        
-                        acsFile.writeInt((int) copyFile.length());
+                        break;
+                    }else{
+                        acsFile.seek(acsFile.getFilePointer()+31);
                     }
                 }
             }
