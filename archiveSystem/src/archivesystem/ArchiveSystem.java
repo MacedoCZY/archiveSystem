@@ -113,7 +113,7 @@ public class ArchiveSystem {
                             readed1 <<= 8;
                             readed1 |= read[1];
                             
-                            System.out.println(readed1);
+                            System.out.println("aqui se esta livre >>> "+readed1);
                             
                             if(readed1 == 0X0000 && (j+1 != quantSectPerFile)){
                                 //voltando para anterior para falar que o proximo e o encontrado
@@ -128,17 +128,23 @@ public class ArchiveSystem {
                                 auxI <<= 8;
                                 auxI |= auxL;
                                 acsFile.writeShort(auxI);
+                                System.out.println("ponteiro pos escrita "+Long.toHexString(acsFile.getFilePointer()));
+                                acsFile.seek(acsFile.getFilePointer()-2);
+                                System.out.println("ponteiro pos escrita ajustado -2 : "+Long.toHexString(acsFile.getFilePointer()));
                                 System.out.println("ponteiro para proximo setor gravado "+Integer.toHexString(Short.toUnsignedInt(auxI)));
                                 j++;
-                                localSet++;
-                                aux = localSet;
+                                localSet = aux;
                                 aux++;
+                                acsFile.seek(record.getSectorSize()+(aux*2));
+                                System.out.println("ponteiro para proximo passo que irei olhar "+(record.getSectorSize()+(aux*2)));
                             }else if(readed1 == 0X0000 && (j+1 == quantSectPerFile)){
                                 acsFile.seek(record.getSectorSize()+(localSet*2));
                                 acsFile.writeShort(0xFEFF);
                                 j++;
                             }else{
+                                System.out.println("entroooooooooooooooooooooooooooooooo");
                                 acsFile.seek(acsFile.getFilePointer()+2);
+                                System.out.println("proximo passo analise pos erro "+(acsFile.getFilePointer()+2));
                                 aux++;
                             }
                         }
