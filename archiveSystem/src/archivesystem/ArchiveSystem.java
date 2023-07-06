@@ -34,10 +34,10 @@ public class ArchiveSystem {
                     formatDisc(acsFile);
                 
                 }else if("2".equals(readed)){
-                    System.out.println("Caminho do arquivo a ser copiado >>");
+                    /*System.out.println("Caminho do arquivo a ser copiado >>");
                     String archCopy = read.nextLine();
-                    RandomAccessFile copyFile = new RandomAccessFile(archCopy, "rw");
-                    copyArch(acsFile, copyFile);
+                    RandomAccessFile copyFile = new RandomAccessFile(archCopy, "rw");*/
+                    copyArch(acsFile/*, copyFile*/);
                 }else if("3".equals(readed)){
                     System.out.println("Exited!");
                     break;
@@ -51,47 +51,59 @@ public class ArchiveSystem {
         }
     }
     
-    public static void copyArch(RandomAccessFile acsFile, RandomAccessFile copyFile){
+    public static void copyArch(RandomAccessFile acsFile/*, RandomAccessFile copyFile*/){
         try {
             bootRecord record = new bootRecord();
-            long quantSectPerFile = Math.round(copyFile.length()/record.getSectorSize());
-            
+            //long quantSectPerFile = Math.round(copyFile.length()/record.getSectorSize());
+            long quantSectPerFile = 10000;
             //preciso de um contador no primeiro while, para saber em que posição está vazio
-            acsFile.seek(record.getSectorSize()+4);
+            System.out.println("sector Size "+record.getSectorSize());
+            acsFile.seek(record.getSectorSize());
+            short localSet = 2;
             while(true){
-                boolean setorClean = true;
+                System.out.println("first pointer "+Long.toHexString(acsFile.getFilePointer()));
+                //System.out.println("valor no setor lido "+acsFile.readShort());
+                System.out.println("local set "+localSet);
+                boolean setorClean = false;
                 //inicio da FAT + 4 bytes dos 2 setores reservados
                 byte[] read = new byte[2];
-                    
-                for(int i = 2; i > 0; i--){
+                System.out.println("poniter entrada "+Long.toHexString(acsFile.getFilePointer()));
+                for(int i = 1; i >= 0; i--){
                     read[i] = acsFile.readByte();
-                    acsFile.seek(acsFile.getFilePointer()+1);
+                    //acsFile.seek(acsFile.getFilePointer()+1);
                 }
-                
+                System.out.println("poniter afeter 1 for "+Long.toHexString(acsFile.getFilePointer()));
                 acsFile.seek(acsFile.getFilePointer()-2);
-                
+                System.out.println("poniter dps e -2 : "+Long.toHexString(acsFile.getFilePointer()));
                 short readed = read[0];
                 readed <<= 8;
                 readed |= read[1];
-                
-                if(readed >= 0xFFF8){
-                    setorClean = false;
+                /*System.out.println(read[0]);
+                System.out.println(read[1]);
+                System.out.println(readed);*/
+                if(readed == 0x0000){
+                    setorClean = true;
                 }
                 
                 if(setorClean){
+                    System.out.println("entro no setor clean");
                     if(quantSectPerFile == 1){
-                        acsFile.writeShort(0xF8FF);
+                        acsFile.writeShort(0xFEFF);
                         break;
                     }else if(quantSectPerFile > 1){
-                        short aux = 3, auxL = 0;
-                        byte auxB = 0;
+                        short aux = localSet;
+                        aux++;
+                        System.out.println("local set dentro "+aux);
+                        acsFile.seek(acsFile.getFilePointer()+2);
+                        
                         for(int j = 0; j <= quantSectPerFile;){
+                            short auxL = 0;
+                            byte auxB = 0;
                             short auxI = 0;
-                            acsFile.seek(acsFile.getFilePointer()+2);
                             
-                            for(int i = 2; i > 0; i--){
+                            for(int i = 1; i >= 0; i--){
                                 read[i] = acsFile.readByte();
-                                acsFile.seek(acsFile.getFilePointer()+1);
+                                //acsFile.seek(acsFile.getFilePointer()+1);
                             }
 
                             acsFile.seek(acsFile.getFilePointer()-2);
@@ -100,11 +112,10 @@ public class ArchiveSystem {
                             readed1 <<= 8;
                             readed1 |= read[1];
                             
-                            if(readed1 >= 0XFFF8){
-                                acsFile.seek(acsFile.getFilePointer()+2);
-                                aux++;
-                            }else{
-                                acsFile.seek(acsFile.getFilePointer()-2);
+                            System.out.println(readed1);
+                            
+                            if(readed1 == 0X0000){
+                                //acsFile.seek(acsFile.getFilePointer()-2);
                                 auxI = aux;
                                 auxL = auxI;
                                 auxL >>= 8;
@@ -113,11 +124,16 @@ public class ArchiveSystem {
                                 auxI <<= 8;
                                 auxI |= auxL;
                                 acsFile.writeShort(auxI);
+                                System.out.println("proximo setor gravado "+Integer.toHexString(Short.toUnsignedInt(auxI)));
+                                j++;
+                            }else{
+                                acsFile.seek(acsFile.getFilePointer()+2);
+                                aux++;
                             }
                         }
                     }
                 }
-                
+                localSet++;
                 acsFile.seek(acsFile.getFilePointer()+2);
             }
             
@@ -156,9 +172,9 @@ public class ArchiveSystem {
             
             //formatando o inicio da FAT 2 setores ocupados
             acsFile.seek(record.getSectorSize());
-            acsFile.writeShort(0xF8FF);
+            acsFile.writeShort(0xFEFF);
             acsFile.seek(record.getSectorSize()+2);
-            acsFile.writeShort(0xF8FF);
+            acsFile.writeShort(0xFEFF);
             
             //zerando os restantes dos bytes da FAT
             ByteBuffer fatBuffer = ByteBuffer.allocate(record.getSectorSize()*record.getSectorPerFat()-4);
