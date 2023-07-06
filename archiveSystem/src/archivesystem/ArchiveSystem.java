@@ -55,7 +55,7 @@ public class ArchiveSystem {
         try {
             bootRecord record = new bootRecord();
             //long quantSectPerFile = Math.round(copyFile.length()/record.getSectorSize());
-            long quantSectPerFile = 10000;
+            long quantSectPerFile = 3;
             //preciso de um contador no primeiro while, para saber em que posição está vazio
             System.out.println("sector Size "+record.getSectorSize());
             acsFile.seek(record.getSectorSize()+4);
@@ -97,6 +97,7 @@ public class ArchiveSystem {
                         acsFile.seek(acsFile.getFilePointer()+2);
                         
                         for(int j = 0; j <= quantSectPerFile;){
+                            System.out.println("quant sector per file "+ quantSectPerFile);
                             short auxL = 0;
                             byte auxB = 0;
                             short auxI = 0;
@@ -105,9 +106,9 @@ public class ArchiveSystem {
                                 read[i] = acsFile.readByte();
                                 //acsFile.seek(acsFile.getFilePointer()+1);
                             }
-
+                            System.out.println("pointer dentro after for "+Long.toHexString(acsFile.getFilePointer()));
                             acsFile.seek(acsFile.getFilePointer()-2);
-
+                            System.out.println("pointer dentro -2 : "+Long.toHexString(acsFile.getFilePointer()));
                             short readed1 = read[0];
                             readed1 <<= 8;
                             readed1 |= read[1];
@@ -115,7 +116,10 @@ public class ArchiveSystem {
                             System.out.println(readed1);
                             
                             if(readed1 == 0X0000){
-                                //acsFile.seek(acsFile.getFilePointer()-2);
+                                //voltando para anterior para falar que o proximo e o encontrado
+                                acsFile.seek(record.getSectorSize()+(localSet*2));
+                                System.out.println("suposto local que deveria gravar o ponteiro "+(record.getSectorSize()+(localSet*2)));
+                                System.out.println("local set * 2 = "+localSet*2);
                                 auxI = aux;
                                 auxL = auxI;
                                 auxL >>= 8;
@@ -124,8 +128,11 @@ public class ArchiveSystem {
                                 auxI <<= 8;
                                 auxI |= auxL;
                                 acsFile.writeShort(auxI);
-                                System.out.println("proximo setor gravado "+Integer.toHexString(Short.toUnsignedInt(auxI)));
+                                System.out.println("ponteiro para proximo setor gravado "+Integer.toHexString(Short.toUnsignedInt(auxI)));
                                 j++;
+                                localSet++;
+                                aux = localSet;
+                                aux++;
                             }else{
                                 acsFile.seek(acsFile.getFilePointer()+2);
                                 aux++;
