@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -42,11 +44,8 @@ public class ArchiveSystem {
                     String archCopy = read.nextLine();
                     if(!archCopy.contains(".")){
                         if(archCopy.length() <= 21){
-                            RandomAccessFile copyFile = new RandomAccessFile(archCopy, "r");
-                            System.out.print("Caminho para gravacao :");
-                            String whereCopy = read.nextLine();
-                            whereCopy = whereCopy.toLowerCase();
-                            copyArch(acsFile, copyFile, whereCopy, archCopy);
+                            RandomAccessFile copyFile = new RandomAccessFile(archCopy, "r"); 
+                            copyArch(acsFile, copyFile, archCopy);
                         }else{
                             System.out.println("O tamanho do nome do arquivo e maior que 21");
                         }
@@ -80,10 +79,7 @@ public class ArchiveSystem {
 
                         if(auxExt.length <= 4 && auxExt.length > 0){
                             RandomAccessFile copyFile = new RandomAccessFile(archCopy, "r");
-                            System.out.print("Caminho para gravacao :");
-                            String whereCopy = read.nextLine();
-                            whereCopy = whereCopy.toLowerCase();
-                            copyArch(acsFile, copyFile, whereCopy, archCopy);
+                            copyArch(acsFile, copyFile, archCopy);
                         }else{
                             System.out.println("Extensão < 0 ou maior que 4");
                         }
@@ -92,16 +88,75 @@ public class ArchiveSystem {
                     System.out.println("Exited!");
                     break;
                 }else{
-                    System.out.println("COmand not found!");
+                    System.out.println("Comand not found!");
                 }
             } catch (FileNotFoundException ex) {
-                System.out.println("Erro at main");
+                System.out.println("Error at main");
             }
             
         }
     }
     
-    public static void copyArch(RandomAccessFile acsFile, RandomAccessFile copyFile, String whereCopy, String archCopy){
+    public static void ls(RandomAccessFile acsFile){
+        try {
+            bootRecord record = new bootRecord();
+            acsFile.seek(record.getSectorSize()*record.getReservSector()+record.getSectorSize());
+            while(true){ 
+                if(acsFile.readByte() != 0X00 && acsFile.readByte() != 0XE5){
+                    acsFile.seek(acsFile.getFilePointer()-1);
+                    byte tam = 0;
+                    for(int i = 0; i < 20; i++){
+                        if(acsFile.readByte() != 0X00){
+                            tam++;
+                        }else{
+                            break;
+                        }
+                    }
+                    char[] nameC = new char[tam];
+                    acsFile.seek(acsFile.getFilePointer()-tam);
+
+                    for(int i = 0; i < tam; i++){
+                        acsFile.seek(acsFile.getFilePointer()-1);
+                        nameC[i] = acsFile.readChar();
+                    }
+                    String name = new String(nameC);
+                    System.out.println("----------------------------------------------------");
+                    System.out.println("Name: "+name);
+                    System.out.println("----------------------------------------------------");
+                    
+                    acsFile.seek(acsFile.getFilePointer()+21);
+                    
+                    byte tamEx = 0;
+                    for(int i = 0; i < 4; i++){
+                        if(acsFile.readByte() != 0X00){
+                            tamEx++;
+                        }else{
+                            break;
+                        }
+                    }
+                    char[] nameEx = new char[tamEx];
+                    acsFile.seek(acsFile.getFilePointer()-tamEx);
+
+                    for(int i = 0; i < tamEx; i++){
+                        acsFile.seek(acsFile.getFilePointer()-1);
+                        nameEx[i] = acsFile.readChar();
+                    }
+                    String nameExt = new String(nameEx);
+                    System.out.println("----------------------------------------------------");
+                    System.out.println("Extension: "+nameExt);
+                    System.out.println("----------------------------------------------------");
+                    
+                    
+                }else{
+                    acsFile.seek(acsFile.getFilePointer()+31);
+                }
+            }
+        } catch (IOException ex) {
+            System.out.println("Error at ls");
+        }
+    }
+    
+    public static void copyArch(RandomAccessFile acsFile, RandomAccessFile copyFile, String archCopy){
         try {
             bootRecord record = new bootRecord();
             int quantSectPerFile = 0;
@@ -220,86 +275,86 @@ public class ArchiveSystem {
                 acsFile.seek(acsFile.getFilePointer()+2);
             }
             
-            if("rootdir".equals(whereCopy)){
-                acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize());
-                System.out.println("pos ::"+(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize()));
-                while(true){
-                    if(acsFile.readByte() == 0x00){
-                        System.out.println(" entero");
-                        acsFile.seek(acsFile.getFilePointer()-1);
-                        if(!archCopy.contains(".")){
-                            acsFile.writeChars(archCopy);
-                            acsFile.seek(acsFile.getFilePointer()+(21-archCopy.length()));
 
-                            acsFile.seek(acsFile.getFilePointer()+4);
-                            Path test = Paths.get(archCopy);
-                            if(Files.isDirectory(test)){
-                                acsFile.writeByte(10);
-                            }else{
-                                acsFile.writeByte(20);
-                            }
+            acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize());
+            //System.out.println("pos ::"+(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize()));
+            while(true){
+                if(acsFile.readByte() == 0x00){
+                    //System.out.println(" entero");
+                    acsFile.seek(acsFile.getFilePointer()-1);
+                    if(!archCopy.contains(".")){
+                        acsFile.writeChars(archCopy);
+                        acsFile.seek(acsFile.getFilePointer()+(21-archCopy.length()));
 
-                            acsFile.writeShort(firstSector);
-
-                            acsFile.writeInt((int) copyFile.length());
-
-                        }else if(archCopy.contains(".")){       
-                            char[] charName = archCopy.toCharArray();
-                            boolean ps = false;
-                            byte tamN = 0;
-                            byte tamE = 0;
-                            for(int i = 0, j = 0; i < charName.length; i++){
-                                if(ps){
-                                    tamE++;
-                                }else if(!ps && charName[i] != '.'){
-                                    tamN++;
-                                }
-
-                                if(charName[i] == '.'){
-                                    ps = true;
-                                }
-                            }
-
-                            char[] auxName = new char[tamN];
-                            char[] auxExt = new char[tamE];
-
-                            ps = false;
-                            for(int i = 0, j = 0; i < charName.length; i++){
-                                if(ps){
-                                    auxExt[j] = charName[i];
-                                    j++;
-                                }else if(!ps && charName[i] != '.'){
-                                    auxName[i] = charName[i];
-                                }
-
-                                if(charName[i] == '.'){
-                                    ps = true;
-                                }
-                            }
-                            String wrtName = new String(auxName);
-                            System.out.println(wrtName);
-                            String wrtExt = new String(auxExt);
-                            System.out.println(wrtExt);
-                            acsFile.writeBytes(wrtName);
-                            acsFile.seek(acsFile.getFilePointer()+(21-auxName.length));
-
-                            acsFile.writeBytes(wrtExt);
-
-                            acsFile.seek(acsFile.getFilePointer()+(4-auxExt.length));
-
-                            acsFile.writeByte(0x20);
-
-                            acsFile.writeShort(firstSector);
-                            //tem que converter isso para little endian *********
-                            
-                            acsFile.writeInt((int) copyFile.length());
+                        acsFile.seek(acsFile.getFilePointer()+4);
+                        Path test = Paths.get(archCopy);
+                        if(Files.isDirectory(test)){
+                            acsFile.writeByte(10);
+                        }else{
+                            acsFile.writeByte(20);
                         }
-                        break;
-                    }else{
-                        acsFile.seek(acsFile.getFilePointer()+31);
+
+                        acsFile.writeShort(firstSector);
+
+                        acsFile.writeInt((int) copyFile.length());
+
+                    }else if(archCopy.contains(".")){       
+                        char[] charName = archCopy.toCharArray();
+                        boolean ps = false;
+                        byte tamN = 0;
+                        byte tamE = 0;
+                        for(int i = 0, j = 0; i < charName.length; i++){
+                            if(ps){
+                                tamE++;
+                            }else if(!ps && charName[i] != '.'){
+                                tamN++;
+                            }
+
+                            if(charName[i] == '.'){
+                                ps = true;
+                            }
+                        }
+
+                        char[] auxName = new char[tamN];
+                        char[] auxExt = new char[tamE];
+
+                        ps = false;
+                        for(int i = 0, j = 0; i < charName.length; i++){
+                            if(ps){
+                                auxExt[j] = charName[i];
+                                j++;
+                            }else if(!ps && charName[i] != '.'){
+                                auxName[i] = charName[i];
+                            }
+
+                            if(charName[i] == '.'){
+                                ps = true;
+                            }
+                        }
+                        String wrtName = new String(auxName);
+                        System.out.println(wrtName);
+                        String wrtExt = new String(auxExt);
+                        System.out.println(wrtExt);
+                        acsFile.writeBytes(wrtName);
+                        acsFile.seek(acsFile.getFilePointer()+(21-auxName.length));
+
+                        acsFile.writeBytes(wrtExt);
+
+                        acsFile.seek(acsFile.getFilePointer()+(4-auxExt.length));
+
+                        acsFile.writeByte(0x20);
+
+                        acsFile.writeShort(firstSector);
+                        //tem que converter isso para little endian *********
+
+                        acsFile.writeInt((int) copyFile.length());
                     }
+                    break;
+                }else{
+                    acsFile.seek(acsFile.getFilePointer()+31);
                 }
             }
+            
             acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize()+26);
             short actSector = acsFile.readShort();
             short aux = actSector;
@@ -311,9 +366,9 @@ public class ArchiveSystem {
             actSector |= aux;
             
             for(int k = 0; k < quantSectPerFile; k++){
-                System.out.println("quantPerfile ="+quantSectPerFile);
+                //System.out.println("quantPerfile ="+quantSectPerFile);
                 acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize())));
-                System.out.println("merda aqui >>>"+(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize()))));
+                //System.out.println("merda aqui >>>"+(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize()))));
                 if(k+1 < quantSectPerFile){
                     for(int i = 0; i < record.getSectorSize(); i++){
                         acsFile.writeByte(copyFile.readByte());
@@ -323,11 +378,11 @@ public class ArchiveSystem {
                         acsFile.writeByte(copyFile.readByte());
                     }
                 }
-                System.out.println("actSector ="+actSector);
+                //System.out.println("actSector ="+actSector);
                 acsFile.seek(record.getSectorSize()+(actSector*2));
-                System.out.println("pos poniter ="+(record.getSectorSize()+(actSector*2)));
+                //System.out.println("pos poniter ="+(record.getSectorSize()+(actSector*2)));
                 short next = acsFile.readShort();
-                System.out.println("next ="+next);
+                //System.out.println("next ="+next);
                 short convg = next;
                 convg >>= 8;
                 byte convh = (byte) next;
@@ -335,18 +390,18 @@ public class ArchiveSystem {
                 next = convh;
                 next <<= 8;
                 next |= convg;
-                System.out.println("next after ="+next);
+                //System.out.println("next after ="+next);
                 
                 if(next < 0XFFFE){
                     actSector = next;
                 }else if(next == 0xFFF8){
                     break;
                 }
-                System.out.println("passouu >>>>>>>>>>>>>>>>.");
+                //System.out.println("passouu >>>>>>>>>>>>>>>>.");
             }
             
         } catch (IOException ex) {
-            System.out.println("Erro at copyArch");
+            System.out.println("Error at copyArch");
         }
         
     }
@@ -405,7 +460,7 @@ public class ArchiveSystem {
             acsFile.close();
             
         } catch (IOException ex) {
-            System.out.println("Erro at formatDisc");
+            System.out.println("Error at formatDisc");
         }
     
     }
