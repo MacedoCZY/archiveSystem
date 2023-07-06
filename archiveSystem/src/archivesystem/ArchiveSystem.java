@@ -61,21 +61,59 @@ public class ArchiveSystem {
             while(true){
                 boolean setorClean = true;
                 //inicio da FAT + 4 bytes dos 2 setores reservados
+                byte[] read = new byte[2];
+                    
+                for(int i = 2; i > 0; i--){
+                    read[i] = acsFile.readByte();
+                    acsFile.seek(acsFile.getFilePointer()+1);
+                }
                 
-                for(int i = 0; i < 4; i++){
-                    if(acsFile.readByte() != 0){
-                        setorClean = false;
-                        break;
-                    }          
+                acsFile.seek(acsFile.getFilePointer()-2);
+                
+                short readed = read[0];
+                readed <<= 8;
+                readed |= read[1];
+                
+                if(readed >= 0xFFF8){
+                    setorClean = false;
                 }
                 
                 if(setorClean){
                     if(quantSectPerFile == 1){
                         acsFile.writeShort(0xF8FF);
                         break;
-                    }else{
-                        for(int j = 0; j <= quantSectPerFile; j++){
-                            acsFile.writeShort();
+                    }else if(quantSectPerFile > 1){
+                        short aux = 3, auxL = 0;
+                        byte auxB = 0;
+                        for(int j = 0; j <= quantSectPerFile;){
+                            short auxI = 0;
+                            acsFile.seek(acsFile.getFilePointer()+2);
+                            
+                            for(int i = 2; i > 0; i--){
+                                read[i] = acsFile.readByte();
+                                acsFile.seek(acsFile.getFilePointer()+1);
+                            }
+
+                            acsFile.seek(acsFile.getFilePointer()-2);
+
+                            short readed1 = read[0];
+                            readed1 <<= 8;
+                            readed1 |= read[1];
+                            
+                            if(readed1 >= 0XFFF8){
+                                acsFile.seek(acsFile.getFilePointer()+2);
+                                aux++;
+                            }else{
+                                acsFile.seek(acsFile.getFilePointer()-2);
+                                auxI = aux;
+                                auxL = auxI;
+                                auxL >>= 8;
+                                auxB = (byte) auxI;
+                                auxI = auxB;
+                                auxI <<= 8;
+                                auxI |= auxL;
+                                acsFile.writeShort(auxI);
+                            }
                         }
                     }
                 }
