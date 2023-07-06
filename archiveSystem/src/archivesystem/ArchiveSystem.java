@@ -290,7 +290,8 @@ public class ArchiveSystem {
                             acsFile.writeByte(0x20);
 
                             acsFile.writeShort(firstSector);
-
+                            //tem que converter isso para little endian *********
+                            
                             acsFile.writeInt((int) copyFile.length());
                         }
                         break;
@@ -299,6 +300,51 @@ public class ArchiveSystem {
                     }
                 }
             }
+            acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize()+26);
+            short actSector = acsFile.readShort();
+            short aux = actSector;
+            aux >>= 8;
+            byte aux1 = (byte) actSector;
+            actSector = 0;
+            actSector = aux1;
+            actSector <<= 8;
+            actSector |= aux;
+            
+            for(int k = 0; k < quantSectPerFile; k++){
+                System.out.println("quantPerfile ="+quantSectPerFile);
+                acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize())));
+                System.out.println("merda aqui >>>"+(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize()))));
+                if(k+1 < quantSectPerFile){
+                    for(int i = 0; i < record.getSectorSize(); i++){
+                        acsFile.writeByte(copyFile.readByte());
+                    }
+                }else if(k+1 == quantSectPerFile){
+                    for(int i = 0; i < (copyFile.length()-((quantSectPerFile-1)*record.getSectorSize())); i++){
+                        acsFile.writeByte(copyFile.readByte());
+                    }
+                }
+                System.out.println("actSector ="+actSector);
+                acsFile.seek(record.getSectorSize()+(actSector*2));
+                System.out.println("pos poniter ="+(record.getSectorSize()+(actSector*2)));
+                short next = acsFile.readShort();
+                System.out.println("next ="+next);
+                short convg = next;
+                convg >>= 8;
+                byte convh = (byte) next;
+                next = 0;
+                next = convh;
+                next <<= 8;
+                next |= convg;
+                System.out.println("next after ="+next);
+                
+                if(next < 0XFFFE){
+                    actSector = next;
+                }else if(next == 0xFFF8){
+                    break;
+                }
+                System.out.println("passouu >>>>>>>>>>>>>>>>.");
+            }
+            
         } catch (IOException ex) {
             System.out.println("Erro at copyArch");
         }
