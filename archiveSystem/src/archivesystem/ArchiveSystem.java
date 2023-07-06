@@ -295,15 +295,34 @@ public class ArchiveSystem {
                         }
 
                         acsFile.writeShort(firstSector);
-
-                        acsFile.writeInt((int) copyFile.length());
+                        
+                        int length = (int) copyFile.length();
+                        int frt = length;
+                        frt >>= 24;
+                        int secF = length;
+                        secF >>= 16;
+                        byte secT = (byte) secF;
+                        int treF = length;
+                        treF >>= 8;
+                        byte treT = (byte) treF;
+                        byte last = (byte) length;
+                        length = 0;
+                        length = last;
+                        length <<= 8;
+                        length |= treT;
+                        length <<= 8;
+                        length |= secT;
+                        length <<= 8;
+                        length |= frt;
+                        
+                        acsFile.writeInt(length);
 
                     }else if(archCopy.contains(".")){       
                         char[] charName = archCopy.toCharArray();
                         boolean ps = false;
                         byte tamN = 0;
                         byte tamE = 0;
-                        for(int i = 0, j = 0; i < charName.length; i++){
+                        for(int i = 0; i < charName.length; i++){
                             if(ps){
                                 tamE++;
                             }else if(!ps && charName[i] != '.'){
@@ -345,9 +364,27 @@ public class ArchiveSystem {
                         acsFile.writeByte(0x20);
 
                         acsFile.writeShort(firstSector);
-                        //tem que converter isso para little endian *********
-
-                        acsFile.writeInt((int) copyFile.length());
+                        
+                        int length = (int) copyFile.length();
+                        int frt = length;
+                        frt >>= 24;
+                        int secF = length;
+                        secF >>= 16;
+                        byte secT = (byte) secF;
+                        int treF = length;
+                        treF >>= 8;
+                        byte treT = (byte) treF;
+                        byte last = (byte) length;
+                        length = 0;
+                        length = last;
+                        length <<= 8;
+                        length |= treT;
+                        length <<= 8;
+                        length |= secT;
+                        length <<= 8;
+                        length |= frt;
+                        
+                        acsFile.writeInt(length);
                     }
                     break;
                 }else{
