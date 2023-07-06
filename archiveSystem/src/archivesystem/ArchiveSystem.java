@@ -144,7 +144,6 @@ public class ArchiveSystem {
                 if(setorClean){
                     //System.out.println("entro no setor clean");
                     firstSector = localSet;
-                    System.out.println("fr = "+firstSector);
                     short convert = firstSector;
                     convert >>= 8;
                     byte conv2 = (byte) firstSector;
@@ -152,7 +151,7 @@ public class ArchiveSystem {
                     firstSector = conv2;
                     firstSector <<= 8;
                     firstSector |= convert;
-                    System.out.println("fr = "+firstSector);
+
                     if(quantSectPerFile == 1){
                         acsFile.writeShort(0xFEFF);
                         break;
