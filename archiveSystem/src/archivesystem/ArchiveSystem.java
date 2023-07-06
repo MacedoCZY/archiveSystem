@@ -58,7 +58,7 @@ public class ArchiveSystem {
             long quantSectPerFile = 10000;
             //preciso de um contador no primeiro while, para saber em que posição está vazio
             System.out.println("sector Size "+record.getSectorSize());
-            acsFile.seek(record.getSectorSize());
+            acsFile.seek(record.getSectorSize()+4);
             short localSet = 2;
             while(true){
                 System.out.println("first pointer "+Long.toHexString(acsFile.getFilePointer()));
