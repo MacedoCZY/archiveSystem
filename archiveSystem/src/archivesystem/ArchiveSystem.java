@@ -96,7 +96,7 @@ public class ArchiveSystem {
                         System.out.println("local set dentro "+aux);
                         acsFile.seek(acsFile.getFilePointer()+2);
                         
-                        for(int j = 0; j <= quantSectPerFile;){
+                        for(int j = 0; j < quantSectPerFile;){
                             System.out.println("quant sector per file "+ quantSectPerFile);
                             short auxL = 0;
                             byte auxB = 0;
@@ -115,7 +115,7 @@ public class ArchiveSystem {
                             
                             System.out.println(readed1);
                             
-                            if(readed1 == 0X0000){
+                            if(readed1 == 0X0000 && (j+1 != quantSectPerFile)){
                                 //voltando para anterior para falar que o proximo e o encontrado
                                 acsFile.seek(record.getSectorSize()+(localSet*2));
                                 System.out.println("suposto local que deveria gravar o ponteiro "+(record.getSectorSize()+(localSet*2)));
@@ -133,12 +133,17 @@ public class ArchiveSystem {
                                 localSet++;
                                 aux = localSet;
                                 aux++;
+                            }else if(readed1 == 0X0000 && (j+1 == quantSectPerFile)){
+                                acsFile.seek(record.getSectorSize()+(localSet*2));
+                                acsFile.writeShort(0xFEFF);
+                                j++;
                             }else{
                                 acsFile.seek(acsFile.getFilePointer()+2);
                                 aux++;
                             }
                         }
                     }
+                    break;
                 }
                 localSet++;
                 acsFile.seek(acsFile.getFilePointer()+2);
