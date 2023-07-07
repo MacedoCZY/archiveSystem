@@ -546,11 +546,11 @@ public class ArchiveSystem {
                     
                     short fr = acsFile.readShort();
                     
-                    System.out.print(" | First Sector: 0x"+lltEndShort(fr));
+                    System.out.print(" | First Sector: "+lltEndShort(fr));
                     
                     int length = acsFile.readInt();
                     
-                    System.out.print(" | Size: 0x"+lltEndInt(length)+"\n");
+                    System.out.print(" | Size: "+lltEndInt(length)+"\n");
                     System.out.println("=============================================================================================================================");
                     sll++;
                     tamSect += 32;
