@@ -29,7 +29,7 @@ public class ArchiveSystem {
         // TODO code application logic here
         while(true){
             try {
-                System.out.println("1.format\n2.copy\n3.ls\n4.exit");
+                System.out.println("1.format\n2.copy\n3.ls\n4.delete\n5.exit");
                 System.out.print("What are you need : ");
                 String readed = read.nextLine();
                 readed = readed.toLowerCase();
@@ -87,6 +87,10 @@ public class ArchiveSystem {
                 }else if("3".equals(readed)){
                     ls(acsFile);
                 }else if("4".contains(readed)){
+                    System.out.print("Nome do arquivo a ser deletado :");
+                    String archName = read.nextLine();
+                    delete(acsFile, archName);
+                }else if("5".contains(readed)){
                     System.out.println("Exited!");
                     break;
                 }else{
@@ -94,6 +98,7 @@ public class ArchiveSystem {
                 }
             } catch (FileNotFoundException ex) {
                 System.out.println("Error at main");
+                Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
             }
             
         }
@@ -112,8 +117,108 @@ public class ArchiveSystem {
 	return bb.wrap(bb.array()).getShort();
     }
     
-    public static void delete(String archName, int firsSec){
-        
+    public static void delete(RandomAccessFile acsFile, String archName){
+        try {
+            bootRecord record = new bootRecord();
+            acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize());
+            while(true){
+                if(acsFile.readByte() != 0X00 && acsFile.readByte() != 0XE5){
+                    acsFile.seek(acsFile.getFilePointer()-2);
+                    byte tam = 0;
+                    for(int i = 0; i < 20; i++){
+                        if(acsFile.read() != 0X00){
+                            tam++;
+                        }else{
+                            break;
+                        }
+                    }
+
+                    byte[] nameC = new byte[tam];
+                    acsFile.seek(acsFile.getFilePointer()-(tam+1));
+                    for(int i = 0; i < tam; i++){
+                        nameC[i] = acsFile.readByte();
+                    }
+                    acsFile.seek(acsFile.getFilePointer()-tam);
+                    acsFile.seek(acsFile.getFilePointer()+21);
+                    
+                    byte tamEx = 0;
+                    for(int i = 0; i < 4; i++){
+                        if(acsFile.readByte() != 0X00){
+                            tamEx++;
+                        }else{
+                            break;
+                        }
+                    }
+                    byte[] nameEx = new byte[tamEx];
+                    acsFile.seek(acsFile.getFilePointer()-(tamEx+1));
+
+                    for(int i = 0; i < tamEx; i++){
+                        nameEx[i] = acsFile.readByte();
+                    }
+                    String nameExt = new String(nameEx);
+
+                    String finalName = new String(nameC).concat(".").concat(nameExt);
+
+                    acsFile.seek(acsFile.getFilePointer()-(21+tamEx));
+
+                    if(archName.equalsIgnoreCase(finalName)){
+                        acsFile.writeByte(0xE5);
+                        //seria 26 porem ja andou 1 escrevendo ai em cima
+                        acsFile.seek(acsFile.getFilePointer()+25); 
+                        
+                        int fisrtSector = lltEndShort(acsFile.readShort());
+                        fisrtSector &= 0x0000FFFF;
+                        
+                        acsFile.seek(record.getSectorSize()+(fisrtSector*2));
+                        System.out.println("this pointer :"+acsFile.getFilePointer());
+                        while(true){
+                            int readSector = lltEndShort(acsFile.readShort());
+                            readSector &= 0x0000FFFF;
+                            acsFile.seek(acsFile.getFilePointer()-2);
+                            System.out.println("readSector ="+readSector);
+                            if(readSector >= 0xFFFE){
+                                acsFile.writeShort(0x0000);
+                                break;
+                            }else if(readSector < 0xFFFE){
+                                while(true){
+                                   int readNew = lltEndShort(acsFile.readShort());
+                                   readNew &= 0x0000FFFF;
+                                    System.out.println("guardado ="+readNew);
+                                   acsFile.seek(acsFile.getFilePointer()-2);
+
+                                   acsFile.writeShort(0x0000);
+
+                                   acsFile.seek(record.getSectorSize()+(readNew*2));
+
+                                   readNew = lltEndShort(acsFile.readShort());
+                                   readNew &= 0X0000FFFF;
+
+                                   acsFile.seek(acsFile.getFilePointer()-2);
+
+                                   if(readNew >= 0xFFF8){
+                                       acsFile.writeShort(0x0000);
+                                       break;
+                                   }
+                                }
+                                break;
+                            }
+                        }
+                        
+                        break;
+                    }
+                }else if(acsFile.readByte() == 0X00){
+                    System.out.println("Error, archive not found");
+                    break;
+                }
+                acsFile.seek(acsFile.getFilePointer()+32);
+                System.out.println(acsFile.getFilePointer());
+
+            }
+            
+        } catch (IOException ex) {
+            System.out.println("Error at delete");
+            Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public static void ls(RandomAccessFile acsFile){
@@ -195,6 +300,7 @@ public class ArchiveSystem {
             }
         } catch (IOException ex) {
             System.out.println("Error at ls");
+            Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -214,7 +320,9 @@ public class ArchiveSystem {
             while(true){
                 boolean setorClean = false;
 
-                short readed = lltEndShort(acsFile.readShort());
+                int readed = lltEndShort(acsFile.readShort());
+                readed &= 0x0000FFFF;
+                
                 acsFile.seek(acsFile.getFilePointer()-2);
                 if(readed == 0x0000){
                     setorClean = true;
@@ -222,7 +330,8 @@ public class ArchiveSystem {
                 
                 if(setorClean){
                     firstSector = lltEndShort(localSet);
-
+                    firstSector &= 0x0000FFFF;
+                    
                     if(quantSectPerFile == 1){
                         acsFile.writeShort(0xFEFF);
                         break;
@@ -232,15 +341,13 @@ public class ArchiveSystem {
                         acsFile.seek(acsFile.getFilePointer()+2);
                         
                         for(int j = 0; j < quantSectPerFile;){
-                            System.out.println("aqui");
-                            short readed1 = lltEndShort(acsFile.readShort());
-                            System.out.println("reade1 ="+readed1);
+                            int readed1 = lltEndShort(acsFile.readShort());
+                            readed1 &= 0x0000FFFF;
+                
                             acsFile.seek(acsFile.getFilePointer()-2);
                             
                             if(readed1 == 0X0000 && (j+1 != quantSectPerFile)){
                                 //voltando para anterior para falar que o proximo e o encontrado
-                                //-----------------------------------------------¬¬
-                                System.out.println("teste ="+(record.getSectorSize()+(localSet*2)));
                                 acsFile.seek(record.getSectorSize()+(localSet*2));
 
                                 acsFile.writeShort(lltEndShort(aux));
@@ -251,14 +358,10 @@ public class ArchiveSystem {
                                 localSet = aux;
                                 aux++;
                                 acsFile.seek(record.getSectorSize()+(aux*2));
-                                System.out.println("aux ="+aux);
-                                System.out.println("local ser ="+localSet);
-                                System.out.println("j = "+j);
                             }else if(readed1 == 0X0000 && (j+1 == quantSectPerFile)){
                                 acsFile.seek(record.getSectorSize()+(localSet*2));
                                 acsFile.writeShort(0xFEFF);
                                 j++;
-                                System.out.println("j ="+j);
                                 break;
                             }else{
                                 acsFile.seek(acsFile.getFilePointer()+2);
@@ -373,13 +476,14 @@ public class ArchiveSystem {
                 System.out.println("next sect :"+next);
                 if(next < 0XFFFE){
                     actSector = next;
-                }else if(next == 0xFFFE){
+                }else if(next >= 0xFFFE){
                     break;
                 }
             }
             
         } catch (IOException ex) {
             System.out.println("Error at copyArch");
+            Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
         }
         
     }
@@ -439,6 +543,7 @@ public class ArchiveSystem {
             
         } catch (IOException ex) {
             System.out.println("Error at formatDisc");
+            Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
         }
     
     }
