@@ -30,7 +30,7 @@ public class ArchiveSystem {
         while(true){
             try {
                 System.out.println("1.format\n2.copy\n3.ls\n4.delete\n5.cat\n6.copy outside\n7.exit");
-                System.out.print("What are you need : ");
+                System.out.print("Instruction : ");
                 String readed = read.nextLine();
                 readed = readed.toLowerCase();
                 
@@ -236,7 +236,7 @@ public class ArchiveSystem {
             }
             
         } catch (IOException ex) {
-            System.out.println("Error at delete");
+            System.out.println("Error at copyOutside");
             Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -305,6 +305,7 @@ public class ArchiveSystem {
                                         System.out.print((char)acsFile.readByte());
                                     }
                                 }
+                                System.out.println("");
                                 acsFile.seek(record.getSectorSize()+(actSector*2));
                                 int next = lltEndShort(acsFile.readShort());
                                 next &= 0x0000FFFF;
@@ -328,6 +329,7 @@ public class ArchiveSystem {
                                         System.out.print((char)acsFile.readByte());
                                     }
                                 }
+                                System.out.println("");
                                 acsFile.seek(record.getSectorSize()+(actSector*2));
                                 int next = lltEndShort(acsFile.readShort());
                                 next &= 0x0000FFFF;
@@ -351,7 +353,7 @@ public class ArchiveSystem {
             }
             
         } catch (IOException ex) {
-            System.out.println("Error at delete");
+            System.out.println("Error at cat");
             Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
