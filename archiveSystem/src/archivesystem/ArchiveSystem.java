@@ -29,7 +29,7 @@ public class ArchiveSystem {
         // TODO code application logic here
         while(true){
             try {
-                System.out.println("1.format\n2.copy\n3.exit");
+                System.out.println("1.format\n2.copy\n3.ls\n4.exit");
                 System.out.print("What are you need : ");
                 String readed = read.nextLine();
                 readed = readed.toLowerCase();
@@ -62,7 +62,7 @@ public class ArchiveSystem {
                                 ps = true;
                             }
                         }
-                        System.out.println(tam);
+                        //System.out.println(tam);
                         char[] auxExt = new char[tam];
                         
                         ps = false;
@@ -85,6 +85,8 @@ public class ArchiveSystem {
                         }
                     }
                 }else if("3".equals(readed)){
+                    ls(acsFile);
+                }else if("4".contains(readed)){
                     System.out.println("Exited!");
                     break;
                 }else{
@@ -100,30 +102,35 @@ public class ArchiveSystem {
     public static void ls(RandomAccessFile acsFile){
         try {
             bootRecord record = new bootRecord();
-            acsFile.seek(record.getSectorSize()*record.getReservSector()+record.getSectorSize());
-            while(true){ 
+            acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize());
+            //System.out.println("init pointer :"+(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize()));
+            int tamSect = 0;
+            while(true){
                 if(acsFile.readByte() != 0X00 && acsFile.readByte() != 0XE5){
-                    acsFile.seek(acsFile.getFilePointer()-1);
+                    acsFile.seek(acsFile.getFilePointer()-2);
+                    //System.out.println("dps de entra :"+acsFile.getFilePointer());
                     byte tam = 0;
                     for(int i = 0; i < 20; i++){
-                        if(acsFile.readByte() != 0X00){
+                        if(acsFile.read() != 0X00){
                             tam++;
                         }else{
                             break;
                         }
                     }
-                    char[] nameC = new char[tam];
-                    acsFile.seek(acsFile.getFilePointer()-tam);
 
+                    //System.out.println("tam :"+tam);
+                    byte[] nameC = new byte[tam];
+                    acsFile.seek(acsFile.getFilePointer()-(tam+1));
+                    //System.out.println("after tam pointer :"+acsFile.getFilePointer());
                     for(int i = 0; i < tam; i++){
-                        acsFile.seek(acsFile.getFilePointer()-1);
-                        nameC[i] = acsFile.readChar();
+                        nameC[i] = acsFile.readByte();
+                        //System.out.println(">> ::"+nameC[i]);
                     }
                     String name = new String(nameC);
-                    System.out.println("----------------------------------------------------");
-                    System.out.println("Name: "+name);
-                    System.out.println("----------------------------------------------------");
-                    
+                    System.out.println("=============================================================================================================================");
+                    System.out.print("Name: "+name);
+                    acsFile.seek(acsFile.getFilePointer()-tam);
+                    //System.out.println("poniter after name :"+acsFile.getFilePointer());
                     acsFile.seek(acsFile.getFilePointer()+21);
                     
                     byte tamEx = 0;
@@ -134,21 +141,73 @@ public class ArchiveSystem {
                             break;
                         }
                     }
-                    char[] nameEx = new char[tamEx];
-                    acsFile.seek(acsFile.getFilePointer()-tamEx);
+                    //System.out.println("tamEx :"+tamEx);
+                    byte[] nameEx = new byte[tamEx];
+                    //o +1 é do ultima compração que anda o ponteiro para frente
+                    acsFile.seek(acsFile.getFilePointer()-(tamEx+1));
+                    //System.out.println("poniter after tamEx :"+acsFile.getFilePointer());
 
                     for(int i = 0; i < tamEx; i++){
-                        acsFile.seek(acsFile.getFilePointer()-1);
-                        nameEx[i] = acsFile.readChar();
+                        nameEx[i] = acsFile.readByte();
                     }
                     String nameExt = new String(nameEx);
-                    System.out.println("----------------------------------------------------");
-                    System.out.println("Extension: "+nameExt);
-                    System.out.println("----------------------------------------------------");
+                    System.out.print(" | Extension: "+nameExt);
                     
+                    acsFile.seek(acsFile.getFilePointer()-tamEx);
+                    acsFile.seek(acsFile.getFilePointer()+4);
+                    //System.out.println("pointer after all Ex :"+acsFile.getFilePointer());
+                    byte test = acsFile.readByte();
+                    if(test == 16){
+                        acsFile.seek(acsFile.getFilePointer()-1);
+                        System.out.print(" | Type: "+acsFile.readByte()+" (diretorio)");
+                    }else if(test == 32){
+                        acsFile.seek(acsFile.getFilePointer()-1);
+                        System.out.print(" | Type: "+acsFile.readByte()+" (arquivo)");
+                    }
                     
-                }else{
+                    short fr = acsFile.readShort();
+                    short aux = fr;
+                    aux >>= 8;
+                    byte aux1 = (byte) fr;
+                    fr = 0;
+                    fr = aux1;
+                    fr <<= 8;
+                    fr |= aux;
+                    
+                    System.out.print(" | First Sector: "+fr);
+                    
+                    int length = acsFile.readInt();
+                    int frt = length;
+                    frt >>= 24;
+                    int secF = length;
+                    secF >>= 16;
+                    byte secT = (byte) secF;
+                    int treF = length;
+                    treF >>= 8;
+                    byte treT = (byte) treF;
+                    byte last = (byte) length;
+                    length = 0;
+                    length = last;
+                    length <<= 8;
+                    length |= treT;
+                    length <<= 8;
+                    length |= secT;
+                    length <<= 8;
+                    length |= frt;
+                    
+                    System.out.print(" | Size: "+length+"\n");
+                    System.out.println("=============================================================================================================================");
+                    
+                    tamSect += 32;
+                }else if(acsFile.readByte() == 0X00){
+                    break;
+                }else if(acsFile.readByte() != 0XE5 && tamSect <= record.getSectorSize()){
+                    acsFile.seek(acsFile.getFilePointer()-1);
+                    //System.out.println("trnasicao poniter to next 32 :"+acsFile.getFilePointer());
+                    tamSect += 32;
+                }else if(acsFile.readByte() == 0XE5){
                     acsFile.seek(acsFile.getFilePointer()+31);
+                    tamSect += 32;
                 }
             }
         } catch (IOException ex) {
@@ -351,9 +410,9 @@ public class ArchiveSystem {
                             }
                         }
                         String wrtName = new String(auxName);
-                        System.out.println(wrtName);
+                        //System.out.println(wrtName);
                         String wrtExt = new String(auxExt);
-                        System.out.println(wrtExt);
+                        //System.out.println(wrtExt);
                         acsFile.writeBytes(wrtName);
                         acsFile.seek(acsFile.getFilePointer()+(21-auxName.length));
 
