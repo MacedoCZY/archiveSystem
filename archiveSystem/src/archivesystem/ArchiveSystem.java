@@ -29,7 +29,7 @@ public class ArchiveSystem {
         // TODO code application logic here
         while(true){
             try {
-                System.out.println("1.format\n2.copy\n3.ls\n4.delete\n5.cat\n6.copy inside\n7.exit");
+                System.out.println("1.format\n2.copy\n3.ls\n4.delete\n5.cat\n6.copy outside\n7.exit");
                 System.out.print("What are you need : ");
                 String readed = read.nextLine();
                 readed = readed.toLowerCase();
@@ -95,7 +95,9 @@ public class ArchiveSystem {
                     String archName = read.nextLine();
                     cat(acsFile, archName);
                 }else if("6".contains(readed)){
-                
+                    System.out.print("Nome do arquivo que deseja copiar para fora :");
+                    String archName = read.nextLine();
+                    copyOutside(acsFile, archName);
                 }else if("7".contains(readed)){
                     System.out.println("Exited!");
                     break;
@@ -121,6 +123,122 @@ public class ArchiveSystem {
 	bb.order(ByteOrder.LITTLE_ENDIAN);
 	bb.putShort((short) numero);
 	return bb.wrap(bb.array()).getShort();
+    }
+    
+    public static void copyOutside(RandomAccessFile acsFile, String archName){
+        try {
+            bootRecord record = new bootRecord();
+            RandomAccessFile copyFile = new RandomAccessFile("copia-".concat(archName), "rws");
+            acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize());
+            while(true){
+                if(acsFile.readByte() != 0X00 && acsFile.readByte() != 0XE5){
+                    acsFile.seek(acsFile.getFilePointer()-2);
+                    byte tam = 0;
+                    for(int i = 0; i < 20; i++){
+                        if(acsFile.read() != 0X00){
+                            tam++;
+                        }else{
+                            break;
+                        }
+                    }
+
+                    byte[] nameC = new byte[tam];
+                    acsFile.seek(acsFile.getFilePointer()-(tam+1));
+                    for(int i = 0; i < tam; i++){
+                        nameC[i] = acsFile.readByte();
+                    }
+                    acsFile.seek(acsFile.getFilePointer()-tam);
+                    acsFile.seek(acsFile.getFilePointer()+21);
+                    
+                    byte tamEx = 0;
+                    for(int i = 0; i < 4; i++){
+                        if(acsFile.readByte() != 0X00){
+                            tamEx++;
+                        }else{
+                            break;
+                        }
+                    }
+                    byte[] nameEx = new byte[tamEx];
+                    acsFile.seek(acsFile.getFilePointer()-(tamEx+1));
+
+                    for(int i = 0; i < tamEx; i++){
+                        nameEx[i] = acsFile.readByte();
+                    }
+                    String nameExt = new String(nameEx);
+
+                    String finalName = new String(nameC).concat(".").concat(nameExt);
+
+                    acsFile.seek(acsFile.getFilePointer()-(21+tamEx));
+
+                    if(archName.equalsIgnoreCase(finalName)){
+                        acsFile.seek(acsFile.getFilePointer()+26); 
+                        
+                        int actSector = lltEndShort(acsFile.readShort());
+                        actSector &= 0x0000FFFF;
+                        
+                        int archSize = lltEndInt(acsFile.readInt());
+                        int quantSectPerFile = archSize%record.getSectorSize();
+                        if(quantSectPerFile != 0){
+                            quantSectPerFile += 1;
+                        }
+                        
+                        if(quantSectPerFile >= 1 && archSize%record.getSectorSize() == 0){
+                            for(int k = 0; k < quantSectPerFile; k++){
+                                acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize())));
+                                if(k+1 < quantSectPerFile){
+                                    for(int i = 0; i < record.getSectorSize(); i++){
+                                        copyFile.write(acsFile.readByte());
+                                    }
+                                }
+                                acsFile.seek(record.getSectorSize()+(actSector*2));
+                                int next = lltEndShort(acsFile.readShort());
+                                next &= 0x0000FFFF;
+                                actSector = next;
+
+                                if(next < 0XFFFE){
+                                    actSector = next;
+                                }else if(next >= 0xFFFE){
+                                    break;
+                                }
+                            }
+                        }else if(quantSectPerFile >= 1 && archSize%record.getSectorSize() != 0){
+                            for(int k = 0; k < quantSectPerFile; k++){
+                                acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize())));
+                                if(k+1 < quantSectPerFile){
+                                    for(int i = 0; i < record.getSectorSize(); i++){
+                                        copyFile.write(acsFile.readByte());
+                                    }
+                                }else if(k+1 == quantSectPerFile){
+                                    for(int i = 0; i < (archSize-((quantSectPerFile-1)*record.getSectorSize())); i++){
+                                        copyFile.write(acsFile.readByte());
+                                    }
+                                }
+                                acsFile.seek(record.getSectorSize()+(actSector*2));
+                                int next = lltEndShort(acsFile.readShort());
+                                next &= 0x0000FFFF;
+                                actSector = next;
+                                if(next < 0XFFFE){
+                                    actSector = next;
+                                }else if(next >= 0xFFFE){
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }else if(acsFile.readByte() == 0X00){
+                    System.out.println("Error, archive not found");
+                    break;
+                }
+                acsFile.seek(acsFile.getFilePointer()+32);
+                System.out.println(acsFile.getFilePointer());
+
+            }
+            
+        } catch (IOException ex) {
+            System.out.println("Error at delete");
+            Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public static void cat(RandomAccessFile acsFile, String archName){
@@ -214,7 +332,6 @@ public class ArchiveSystem {
                                 int next = lltEndShort(acsFile.readShort());
                                 next &= 0x0000FFFF;
                                 actSector = next;
-                                System.out.println("next ="+next);
                                 if(next < 0XFFFE){
                                     actSector = next;
                                 }else if(next >= 0xFFFE){
