@@ -463,6 +463,7 @@ public class ArchiveSystem {
             bootRecord record = new bootRecord();
             acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+record.getSectorSize());
             int tamSect = 0;
+            int sll = 0;
             while(true){
                 short compar = acsFile.readByte();
                 compar &= 0x00FF;
@@ -526,7 +527,7 @@ public class ArchiveSystem {
                     
                     System.out.print(" | Size: 0x"+lltEndInt(length)+"\n");
                     System.out.println("=============================================================================================================================");
-                    
+                    sll++;
                     tamSect += 32;
                 }else if(compar == 0X00){
                     break;
@@ -535,7 +536,13 @@ public class ArchiveSystem {
                     tamSect += 32;
                 }else if(compar != 0XE5 && tamSect <= record.getSectorSize()){
                     tamSect += 32;
+                    sll++;
                 }
+            }
+            if(sll == 0){
+                System.out.println("=============================================================================================================================");
+                System.out.println("empty");
+                System.out.println("=============================================================================================================================");
             }
         } catch (IOException ex) {
             System.out.println("Error at ls");
@@ -720,9 +727,7 @@ public class ArchiveSystem {
             System.out.println("Error at copyArch");
             Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
     }
-
     
     public static void formatDisc(RandomAccessFile acsFile){
         try {
@@ -780,7 +785,5 @@ public class ArchiveSystem {
             System.out.println("Error at formatDisc");
             Logger.getLogger(ArchiveSystem.class.getName()).log(Level.SEVERE, null, ex);
         }
-    
-    }
-    
+    }  
 }
