@@ -179,7 +179,7 @@ public class ArchiveSystem {
                         
                         int archSize = lltEndInt(acsFile.readInt());
                         int partinteira = archSize/record.getSectorSize();
-                        float resto = (float)archSize/(float)record.getSectorSize();
+                        float resto = ((float)archSize/(float)record.getSectorSize())-partinteira;
                         int quantSectPerFile = 0;
                         if(resto > 0){
                             quantSectPerFile = partinteira+1;
@@ -187,7 +187,7 @@ public class ArchiveSystem {
                             quantSectPerFile = partinteira;
                         }
                         
-                        if(quantSectPerFile >= 1 && (float)archSize%(float)record.getSectorSize() == 0){
+                        if(quantSectPerFile >= 1 && resto == 0){
                             for(int k = 0; k < quantSectPerFile; k++){
                                 acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize())));
                                 if(k+1 < quantSectPerFile){
@@ -206,7 +206,7 @@ public class ArchiveSystem {
                                     break;
                                 }
                             }
-                        }else if(quantSectPerFile >= 1 && (float)archSize%(float)record.getSectorSize() != 0){
+                        }else if(quantSectPerFile >= 1 && resto != 0){
                             for(int k = 0; k < quantSectPerFile; k++){
                                 acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize())));
                                 if(k+1 < quantSectPerFile){
@@ -305,7 +305,7 @@ public class ArchiveSystem {
                         
                         int archSize = lltEndInt(acsFile.readInt());
                         int partinteira = archSize/record.getSectorSize();
-                        float resto = (float)archSize/(float)record.getSectorSize();
+                        float resto = ((float)archSize/(float)record.getSectorSize())-partinteira;
                         int quantSectPerFile = 0;
                         if(resto > 0){
                             quantSectPerFile = partinteira+1;
@@ -313,7 +313,7 @@ public class ArchiveSystem {
                             quantSectPerFile = partinteira;
                         }
                         
-                        if(quantSectPerFile >= 1 && (float)archSize%(float)record.getSectorSize() == 0){
+                        if(quantSectPerFile >= 1 && resto == 0){
                             for(int k = 0; k < quantSectPerFile; k++){
                                 acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize())));
                                 if(k+1 < quantSectPerFile){
@@ -333,7 +333,7 @@ public class ArchiveSystem {
                                     break;
                                 }
                             }
-                        }else if(quantSectPerFile >= 1 && (float)archSize%(float)record.getSectorSize() != 0){
+                        }else if(quantSectPerFile >= 1 && resto != 0){
                             for(int k = 0; k < quantSectPerFile; k++){
                                 acsFile.seek(record.getSectorSize()*record.getSectorPerFat()+(2*record.getSectorSize())+(((actSector-2)*record.getSectorSize())));
                                 if(k+1 < quantSectPerFile){
